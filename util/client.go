@@ -294,6 +294,37 @@ func ProviderToken(d *schema.ResourceData) (string, error) {
 }
 
 func SignAWSLogin(parameters map[string]interface{}) error {
+	region := "eu-central-1"
+	config := aws.NewConfig()
+	config.Region = &region
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config:                  *config,
+		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+	})
+
+	if err != nil {
+		log.Fatalf("session error: %v", err)
+	}
+
+	creds := sess.Config.Credentials
+
+	var headerValue string
+	if val, ok := parameters["header_value"].(string); ok {
+		headerValue = val
+	}
+
+	loginData, err := awsauth.GenerateLoginData(creds, headerValue, region)
+	if err != nil {
+		return fmt.Errorf("failed to generate AWS login data: %s", err)
+	}
+
+	parameters["iam_http_request_method"] = loginData["iam_http_request_method"]
+	parameters["iam_request_url"] = loginData["iam_request_url"]
+	parameters["iam_request_headers"] = loginData["iam_request_headers"]
+	parameters["iam_request_body"] = loginData["iam_request_body"]
+
+	return nil
+
 	var accessKey, secretKey, securityToken string
 	if val, ok := parameters["aws_access_key_id"].(string); ok {
 		accessKey = val
