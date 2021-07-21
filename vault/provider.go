@@ -8,6 +8,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/mutexkv"
@@ -866,34 +869,26 @@ func parse(descs map[string]*Description) (map[string]*schema.Resource, error) {
 }
 
 func signAWSLogin(parameters map[string]interface{}) error {
-	var accessKey, secretKey, securityToken string
-	if val, ok := parameters["aws_access_key_id"].(string); ok {
-		accessKey = val
-	}
+	region := "eu-central-1"
+	config := aws.NewConfig()
+	config.Region = &region
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config:                  *config,
+		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+	})
 
-	if val, ok := parameters["aws_secret_access_key"].(string); ok {
-		secretKey = val
-	}
-
-	if val, ok := parameters["aws_security_token"].(string); ok {
-		securityToken = val
-	}
-
-	creds, err := awsauth.RetrieveCreds(accessKey, secretKey, securityToken)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve AWS credentials: %s", err)
+		log.Fatalf("session error: %v", err)
 	}
 
-	var headerValue, stsRegion string
+	creds := sess.Config.Credentials
+
+	var headerValue string
 	if val, ok := parameters["header_value"].(string); ok {
 		headerValue = val
 	}
 
-	if val, ok := parameters["sts_region"].(string); ok {
-		stsRegion = val
-	}
-
-	loginData, err := awsauth.GenerateLoginData(creds, headerValue, stsRegion)
+	loginData, err := awsauth.GenerateLoginData(creds, headerValue, region)
 	if err != nil {
 		return fmt.Errorf("failed to generate AWS login data: %s", err)
 	}
