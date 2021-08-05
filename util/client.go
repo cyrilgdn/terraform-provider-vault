@@ -9,6 +9,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/vault/api"
@@ -313,46 +316,7 @@ func SignAWSLogin(parameters map[string]interface{}) error {
 		headerValue = val
 	}
 
-	loginData, err := awsauth.GenerateLoginData(creds, headerValue, region)
-	if err != nil {
-		return fmt.Errorf("failed to generate AWS login data: %s", err)
-	}
-
-	parameters["iam_http_request_method"] = loginData["iam_http_request_method"]
-	parameters["iam_request_url"] = loginData["iam_request_url"]
-	parameters["iam_request_headers"] = loginData["iam_request_headers"]
-	parameters["iam_request_body"] = loginData["iam_request_body"]
-
-	return nil
-
-	var accessKey, secretKey, securityToken string
-	if val, ok := parameters["aws_access_key_id"].(string); ok {
-		accessKey = val
-	}
-
-	if val, ok := parameters["aws_secret_access_key"].(string); ok {
-		secretKey = val
-	}
-
-	if val, ok := parameters["aws_security_token"].(string); ok {
-		securityToken = val
-	}
-
-	creds, err := awsauth.RetrieveCreds(accessKey, secretKey, securityToken)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve AWS credentials: %s", err)
-	}
-
-	var headerValue, stsRegion string
-	if val, ok := parameters["header_value"].(string); ok {
-		headerValue = val
-	}
-
-	if val, ok := parameters["sts_region"].(string); ok {
-		stsRegion = val
-	}
-
-	loginData, err := awsauth.GenerateLoginData(creds, headerValue, stsRegion)
+	loginData, err := awsauth.GenerateLoginData(creds, headerValue, "us-east-1")
 	if err != nil {
 		return fmt.Errorf("failed to generate AWS login data: %s", err)
 	}
