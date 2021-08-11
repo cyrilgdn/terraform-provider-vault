@@ -139,6 +139,9 @@ variables in order to keep credential information out of the configuration.
   that Terraform can be tricked into writing secrets to a server controlled
   by an intruder. May be set via the `VAULT_SKIP_VERIFY` environment variable.
 
+* `tls_server_name` - (Optional) Name to use as the SNI host when connecting
+  via TLS. May be set via the `VAULT_TLS_SERVER_NAME` environment variable.
+
 * `max_lease_ttl_seconds` - (Optional) Used as the duration for the
   intermediate Vault token Terraform issues itself, which in turn limits
   the duration of secret leases issued by Vault. Defaults to 20 minutes
