@@ -129,6 +129,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("VAULT_SKIP_VERIFY", false),
 				Description: "Set this to true only if the target Vault server is an insecure development instance.",
 			},
+			"tls_server_name": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("VAULT_TLS_SERVER_NAME", false),
+				Description: "Name to use as the SNI host when connecting via TLS.",
+			},
 			"max_lease_ttl_seconds": {
 				Type:     schema.TypeInt,
 				Optional: true,
