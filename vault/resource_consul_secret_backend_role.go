@@ -49,11 +49,19 @@ func consulSecretBackendRoleResource() *schema.Resource {
 			},
 			"policies": {
 				Type:        schema.TypeList,
-				Required:    true,
+				Optional:    true,
 				Description: "List of Consul policies to associate with this role",
+				Default:     []string{},
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				ConflictsWith: []string{"policy"},
+			},
+			"policy": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Description:   "Token policy for Consul < 1.4",
+				ConflictsWith: []string{"policies"},
 			},
 			"max_ttl": {
 				Type:        schema.TypeInt,
@@ -105,10 +113,13 @@ func consulSecretBackendRoleWrite(d *schema.ResourceData, meta interface{}) erro
 
 	path := consulSecretBackendRolePath(backend, name)
 
-	policies := d.Get("policies").([]interface{})
+	var payload = map[string]interface{}{}
 
-	payload := map[string]interface{}{
-		"policies": policies,
+	policy := d.Get("policy").(string)
+	if policy != "" {
+		payload["policy"] = policy
+	} else {
+		payload["policies"] = d.Get("policies").([]interface{})
 	}
 
 	if v, ok := d.GetOkExists("max_ttl"); ok {
