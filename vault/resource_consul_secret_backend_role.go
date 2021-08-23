@@ -51,7 +51,6 @@ func consulSecretBackendRoleResource() *schema.Resource {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "List of Consul policies to associate with this role",
-				Default:     []string{},
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
