@@ -184,7 +184,7 @@ func consulSecretBackendRoleRead(d *schema.ResourceData, meta interface{}) error
 	} else {
 		d.Set("backend", backend)
 	}
-	if policy, ok := d.GetOk("policy"); ok {
+	if policy, ok := data["policy"]; ok {
 		decodedPolicy, err := base64.StdEncoding.DecodeString(policy.(string))
 		if err != nil {
 			return fmt.Errorf("invalid base64 encoded policy for Consul legacy ACL: %w", err)
