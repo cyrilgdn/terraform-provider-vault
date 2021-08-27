@@ -1,6 +1,7 @@
 package vault
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"regexp"
@@ -112,11 +113,12 @@ func consulSecretBackendRoleWrite(d *schema.ResourceData, meta interface{}) erro
 
 	path := consulSecretBackendRolePath(backend, name)
 
-	var payload = map[string]interface{}{}
+	payload := map[string]interface{}{}
 
 	policy := d.Get("policy").(string)
 	if policy != "" {
-		payload["policy"] = policy
+		encodedPolicy := base64.StdEncoding.EncodeToString([]byte(policy))
+		payload["policy"] = encodedPolicy
 	} else {
 		payload["policies"] = d.Get("policies").([]interface{})
 	}
@@ -181,6 +183,16 @@ func consulSecretBackendRoleRead(d *schema.ResourceData, meta interface{}) error
 		d.Set("path", backend)
 	} else {
 		d.Set("backend", backend)
+	}
+	if policy, ok := d.GetOk("policy"); ok {
+		decodedPolicy, err := base64.StdEncoding.DecodeString(policy.(string))
+		if err != nil {
+			return fmt.Errorf("invalid base64 encoded policy for Consul legacy ACL: %w", err)
+		}
+
+		d.Set("policy", string(decodedPolicy))
+	} else {
+		d.Set("policy", "")
 	}
 	d.Set("policies", data["policies"])
 	d.Set("max_ttl", data["max_ttl"])
