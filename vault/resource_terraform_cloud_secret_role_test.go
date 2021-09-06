@@ -23,7 +23,7 @@ func TestTerraformCloudSecretRole(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			if token == "" || teamId == "" || userId == "" {
-				t.Skipf("TEST_TF_TOKEN, TEST_TF_TEAM_ID, and TEST_TF_USER_ID must be set. Are currently %s, %s, and %s respectively", token, teamId, userId)
+				t.Skip("TEST_TF_TOKEN, TEST_TF_TEAM_ID and TEST_TF_USER_ID must be set.")
 			}
 		},
 		CheckDestroy: testAccTerraformCloudSecretRoleCheckDestroy,
