@@ -69,6 +69,12 @@ func databaseSecretBackendConnectionResource() *schema.Resource {
 				Description: "A map of sensitive data to pass to the endpoint. Useful for templated connection strings.",
 				Sensitive:   true,
 			},
+			"revoke_on_destroy": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Specifies if all connection leases should be revoked when destroying the connection",
+				Default:     false,
+			},
 
 			"elasticsearch": {
 				Type:        schema.TypeList,
@@ -930,6 +936,17 @@ func databaseSecretBackendConnectionUpdate(d *schema.ResourceData, meta interfac
 func databaseSecretBackendConnectionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*util.Client)
 	path := d.Id()
+	backend := d.Get("backend").(string)
+
+	if d.Get("revoke_on_destroy").(bool) {
+		log.Printf("[DEBUG] Revoking database leases for backend %s", backend)
+		if _, err := client.Logical().Write(
+			fmt.Sprintf("/sys/leases/revoke-prefix/%s", backend),
+			map[string]interface{}{"sync": true},
+		); err != nil {
+			return fmt.Errorf("error revoking leases for database %s: %w", backend, err)
+		}
+	}
 
 	log.Printf("[DEBUG] Removing database connection config %q", path)
 	_, err := client.Logical().Delete(path)
