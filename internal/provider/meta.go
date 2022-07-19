@@ -196,8 +196,9 @@ func NewProviderMeta(d *schema.ResourceData) (interface{}, error) {
 			} else {
 				logger.SetLevel(hclog.Error)
 			}
+
 			if err := signAWSLogin(authLoginParameters, logger); err != nil {
-				return nil, fmt.Errorf("error signing AWS login request: %s", err)
+				return nil, fmt.Errorf("error signing AWS login request: %w", err)
 			}
 		}
 
@@ -334,7 +335,7 @@ func setChildToken(d *schema.ResourceData, c *api.Client) error {
 }
 
 func signAWSLogin(parameters map[string]interface{}, logger hclog.Logger) error {
-	var accessKey, secretKey, securityToken string
+	var accessKey, secretKey, sessionToken, stsRegion string
 	if val, ok := parameters["aws_access_key_id"].(string); ok {
 		accessKey = val
 	}
@@ -343,22 +344,42 @@ func signAWSLogin(parameters map[string]interface{}, logger hclog.Logger) error 
 		secretKey = val
 	}
 
-	if val, ok := parameters["aws_security_token"].(string); ok {
-		securityToken = val
-	}
-
-	creds, err := awsutil.RetrieveCreds(accessKey, secretKey, securityToken, logger)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve AWS credentials: %s", err)
-	}
-
-	var headerValue, stsRegion string
-	if val, ok := parameters["header_value"].(string); ok {
-		headerValue = val
+	// security token is the legacy name
+	if val, ok := parameters["aws_session_token"].(string); ok {
+		sessionToken = val
+	} else if val, ok := parameters["aws_security_token"].(string); ok {
+		sessionToken = val
 	}
 
 	if val, ok := parameters["sts_region"].(string); ok {
 		stsRegion = val
+	}
+
+	credConfig := awsutil.CredentialsConfig{
+		AccessKey:    accessKey,
+		SecretKey:    secretKey,
+		SessionToken: sessionToken,
+		Region:       stsRegion,
+		Logger:       logger,
+	}
+
+	creds, err := credConfig.GenerateCredentialChain()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve AWS credentials chain: %w", err)
+	}
+
+	if creds == nil {
+		return fmt.Errorf("could not compile valid credential providers from static config, environment, shared, or instance metadata")
+	}
+
+	_, err = creds.Get()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve credentials from credential chain: %w", err)
+	}
+
+	var headerValue string
+	if val, ok := parameters["header_value"].(string); ok {
+		headerValue = val
 	}
 
 	loginData, err := awsutil.GenerateLoginData(creds, headerValue, stsRegion, logger)
