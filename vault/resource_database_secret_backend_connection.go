@@ -1645,6 +1645,17 @@ func databaseSecretBackendConnectionDelete(d *schema.ResourceData, meta interfac
 		return e
 	}
 
+	backend := d.Get("backend").(string)
+	if d.Get("revoke_on_destroy").(bool) {
+		log.Printf("[DEBUG] Revoking database leases for backend %s", backend)
+		if _, err := client.Logical().Write(
+			fmt.Sprintf("/sys/leases/revoke-prefix/%s", backend),
+			map[string]interface{}{"sync": true},
+		); err != nil {
+			return fmt.Errorf("error revoking leases for databases %s: %w", backend, err)
+		}
+	}
+
 	path := d.Id()
 
 	log.Printf("[DEBUG] Removing database connection config %q", path)
