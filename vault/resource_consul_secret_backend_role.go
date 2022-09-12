@@ -120,7 +120,7 @@ func consulSecretBackendRoleWrite(d *schema.ResourceData, meta interface{}) erro
 		encodedPolicy := base64.StdEncoding.EncodeToString([]byte(policy))
 		payload["policy"] = encodedPolicy
 	} else {
-		payload["policies"] = d.Get("policies").([]interface{})
+		payload["consul_policies"] = d.Get("policies").([]interface{})
 	}
 
 	if v, ok := d.GetOkExists("max_ttl"); ok {
@@ -194,7 +194,7 @@ func consulSecretBackendRoleRead(d *schema.ResourceData, meta interface{}) error
 	} else {
 		d.Set("policy", "")
 	}
-	d.Set("policies", data["policies"])
+	d.Set("policies", data["consul_policies"])
 	d.Set("max_ttl", data["max_ttl"])
 	d.Set("ttl", data["ttl"])
 	d.Set("token_type", data["token_type"])
