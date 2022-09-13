@@ -201,6 +201,12 @@ func getCommonDatabaseSchema() schemaMap {
 			// TODO: revert to true
 			Sensitive: false,
 		},
+		"revoke_on_destroy": {
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Description: "Specifies if all connection leases should be revoked when destroying the connection.",
+			Default:     false,
+		},
 	}
 }
 
